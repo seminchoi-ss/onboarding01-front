@@ -45,7 +45,7 @@ jobs:
           aws ec2 create-launch-template-version \
             --launch-template-id ${{ secrets.LAUNCH_TEMPLATE_ID_WEB }} \
             --version-description "New version with AMI ${{ env.AMI_ID }}" \
-            --source-version $Latest \
+            --source-version \$Latest \
             --launch-template-data "{ \"ImageId\": \"${{ env.AMI_ID }}\" }"
 
       - name: Start Instance Refresh
