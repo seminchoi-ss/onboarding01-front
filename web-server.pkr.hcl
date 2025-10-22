@@ -30,7 +30,7 @@ variable "subnet_id" {
 source "amazon-ebs" "web-tier" {
   region        = var.aws_region
   instance_type = "t3.small"
-  ssh_username  = "ubuntu"
+  ssh_username  = "ec2-user"
   vpc_id        = var.vpc_id
   subnet_id     = var.subnet_id
   associate_public_ip_address = true
@@ -57,7 +57,7 @@ build {
   provisioner "shell" {
     inline = [
       "sudo mkdir -p /tmp/web-source",
-      "sudo chown ubuntu:ubuntu /tmp/web-source"
+      "sudo chown ec2-user:ec2-user /tmp/web-source"
     ]
   }
 
@@ -68,7 +68,7 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sudo -u ubuntu bash -c '",
+      "sudo -u ec2-user bash -c '",
       "  export NVM_DIR=\"$HOME/.nvm\"",
       "  [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"",
       "",
@@ -78,13 +78,12 @@ build {
       "  npm run build",
       "'",
 
-      "sudo mkdir -p /home/ubuntu/web-server/build",
-      "sudo chown -R ubuntu:ubuntu /home/ubuntu/web-server",
-      "sudo rsync -a --delete /tmp/web-source/build/ /home/ubuntu/web-server/build/",
+      "sudo mkdir -p /home/ec2-user/web-server/build",
+      "sudo chown -R ec2-user:ec2-user /home/ec2-user/web-server",
+      "sudo rsync -a --delete /tmp/web-source/build/ /home/ec2-user/web-server/build/",
       "sudo cp /tmp/web-source/nginx.conf /etc/nginx/nginx.conf",
       
-      "sudo sed -i 's/user nginx;/user ubuntu;/' /etc/nginx/nginx.conf",
-      "sudo sed -i 's|root    /home/ec2-user/web-server/build;|root    /home/ubuntu/web-server/build;|g' /etc/nginx/nginx.conf",
+      "sudo sed -i 's/user nginx;/user ec2-user;/' /etc/nginx/nginx.conf",
 
       "sudo systemctl restart nginx"
     ]
