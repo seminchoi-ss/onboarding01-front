@@ -1,0 +1,56 @@
+name: Deploy Web Tier
+
+on:
+  push:
+    branches:
+      - deploy/simple-web
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-northeast-2
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_WEB }}
+          
+      - name: Setup Packer
+        uses: hashicorp/setup-packer@main
+        with:
+          version: 'latest'
+
+      - name: Build AMI with Packer
+        id: packer
+        working-directory: ./web-server
+        run: |
+          set -o pipefail
+          GIT_HASH=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "Using Git hash: $GIT_HASH"
+
+          packer init web-server.pkr.hcl
+          packer build -var "aws_region=${{ secrets.AWS_REGION }}" -var "git_hash=$GIT_HASH" -var "vpc_id=${{ secrets.AWS_VPC_ID }}" -var "subnet_id=${{ secrets.AWS_SUBNET_ID }}" -machine-readable web-server.pkr.hcl | tee packer.log
+          echo "ami_id=$(grep -E 'artifact,0,id' packer.log | cut -d, -f6 | cut -d: -f2)" >> $GITHUB_OUTPUT
+
+      - name: Set AMI ID environment variable
+        run: echo "AMI_ID=${{ steps.packer.outputs.ami_id }}" >> $GITHUB_ENV
+
+      - name: Update Launch Template
+        run: |
+          aws ec2 create-launch-template-version \
+            --launch-template-id ${{ secrets.LAUNCH_TEMPLATE_ID_WEB }} \
+            --version-description "New version with AMI ${{ env.AMI_ID }}" \
+            --source-version $Latest \
+            --launch-template-data "{ \"ImageId\": \"${{ env.AMI_ID }}\" }"
+
+      - name: Start Instance Refresh
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name ${{ secrets.AUTO_SCALING_GROUP_NAME_WEB }} \
+            --strategy "Rolling"
