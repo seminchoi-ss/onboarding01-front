@@ -28,7 +28,6 @@ jobs:
 
       - name: Build AMI with Packer
         id: packer
-        working-directory: .
         run: |
           set -o pipefail
           GIT_HASH=$(echo "${{ github.sha }}" | cut -c1-7)
