@@ -86,6 +86,9 @@ build {
       "sudo chmod 755 /home/ec2-user",
       "sudo chmod -R 755 /home/ec2-user/web-server/build",
 
+      "echo '--- Running nslookup for DNS debugging ---'",
+      "nslookup internal-WAS-LB-1905652051.ap-northeast-2.elb.amazonaws.com || echo 'nslookup command failed'",
+      "echo '--- End of DNS debugging ---'",
       "echo 'Testing nginx configuration'",
       "sudo nginx -t",
       "echo 'Restarting nginx'",
