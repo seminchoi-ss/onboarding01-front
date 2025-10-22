@@ -72,11 +72,6 @@ build {
       "  export NVM_DIR=\"$HOME/.nvm\"",
       "  [ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"",
       "",
-      "  echo \"Installing Node.js v20...\"",
-      "  nvm install 20",
-      "  nvm use 20",
-      "  nvm alias default 20",
-      "",
       "  cd /tmp/web-source",
       "  echo \"Running npm install and build...\"",
       "  npm install",
@@ -88,8 +83,12 @@ build {
       "sudo rsync -a --delete /tmp/web-source/build/ /home/ec2-user/web-server/build/",
       "sudo cp /tmp/web-source/nginx.conf /etc/nginx/nginx.conf",
       
-      "sudo sed -i 's/user nginx;/user ec2-user;/' /etc/nginx/nginx.conf",
+      "sudo chmod 755 /home/ec2-user",
+      "sudo chmod -R 755 /home/ec2-user/web-server/build",
 
+      "echo 'Testing nginx configuration'",
+      "sudo nginx -t",
+      "echo 'Restarting nginx'",
       "sudo systemctl restart nginx"
     ]
   }
